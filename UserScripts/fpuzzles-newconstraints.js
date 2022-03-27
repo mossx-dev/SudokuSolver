@@ -69,6 +69,23 @@
         ]
     },
     {
+        name: 'Modular Line',
+        type: 'line',
+        color: '#A6B85E',
+        colorDark: '#A6B85E',
+        lineWidth: 0.25,
+        tooltip: [
+            'Any set of three sequential cells along an modular line must contain',
+            'a low digit (1, 4, 7), a middle digit (2, 5, 8), and a high higit (3, 6, 9).',
+            'Digits my repeat on a line, if allowed by other rules.',
+            'An modular line of length two may not contain two digits from the same rank.',
+            '',
+            'Click and drag to draw an modular line.',
+            'Click on an modular line to remove it.',
+            'Shift click and drag to draw overlapping modular lines.',
+        ]
+    },
+    {
         name: 'Region Sum Line',
         type: 'line',
         color: '#2ECBFF',
@@ -377,7 +394,7 @@
                 for (let line of puzzle.line) {
                     // Upgrade from old boolean
                     if (line.isNewConstraint) {
-                        line.fromConstraint = line.color === "#C060C0" ? "Renban" : (line.color === "#67F067" ? "Whispers" : "Entropic");
+                        line.fromConstraint = line.color === "#C060C0" ? "Renban" : (line.color === "#67F067" ? "Whispers" : (line.color == "#FFCCAA" ? "Entropic Line" : "Modular Line"));
                         delete line.isNewConstraint;
                     }
 
@@ -561,6 +578,61 @@
                             if (lineGroupIndices[nGroup] !== -1) {
                                 if (lineGroupIndices.indexOf(index % 3) !== -1) {
                                     if (!entropicLineGroups[lineGroupIndices.indexOf(index % 3)].includes(n)) {
+                                    return false;
+                                    }
+                                }
+                            }
+                            else if (lineGroupIndices[(nGroup + 1) % 3] !== -1 && lineGroupIndices[(nGroup + 2) % 3] !== -1) {
+                                if (lineGroupIndices[(nGroup + 1) % 3] === (index % 3) || lineGroupIndices[(nGroup + 2) % 3] == (index % 3)) {
+                                    return false;
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+
+            // Modular Line
+            const constraintsModularLine = constraints[cID('Modular Line')];
+            if (constraintsModularLine && constraintsModularLine.length > 0) {
+                const modularLineGroups = [[1, 4, 7], [2, 5, 8], [3, 6, 9]];
+                for (let modularLine of constraintsModularLine) {
+                    for (let line of modularLine.lines) {
+                        const index = line.indexOf(cell);
+                        if (index > -1) {
+                            let lineGroupIndices = [-1, -1, -1];
+
+                            let nGroup = -1;
+
+                            for (let i = 0; i < modularLineGroups.length; i++) {
+                                if (modularLineGroups[i].includes(n)) {
+                                    nGroup = i;
+                                }
+                            }
+
+                            for (let loopIndex = 0; loopIndex < line.length; loopIndex++) {
+                                if (line[loopIndex].value) {
+                                    for (let i = 0; i < modularLineGroups.length; i++) {
+                                        if (modularLineGroups[i].includes(line[loopIndex].value)) {
+                                            if (lineGroupIndices[i] === -1) {
+                                                lineGroupIndices[i] = loopIndex % 3;
+                                            }
+                                            else {
+                                                if (lineGroupIndices[i] !== loopIndex % 3) {
+                                                    if (i === nGroup) {
+                                                        return false;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (lineGroupIndices[nGroup] !== -1) {
+                                if (lineGroupIndices.indexOf(index % 3) !== -1) {
+                                    if (!modularLineGroups[lineGroupIndices.indexOf(index % 3)].includes(n)) {
                                     return false;
                                     }
                                 }
@@ -823,6 +895,24 @@
                 const entropicLineInfo = newConstraintInfo.filter(c => c.name === 'Entropic Line')[0];
                 for (var a = 0; a < this.lines.length; a++) {
                     drawLine(this.lines[a], entropicLineInfo.color, entropicLineInfo.colorDark, entropicLineInfo.lineWidth);
+                }
+            }
+
+            this.addCellToLine = function (cell) {
+                this.lines[this.lines.length - 1].push(cell);
+            }
+        }
+
+        // Modular Line
+        window.modularline = function(cell) {
+            this.lines = [
+                [cell]
+            ];
+
+            this.show = function () {
+                const modularLineInfo = newConstraintInfo.filter(c => c.name === 'Modular Line')[0];
+                for (var a = 0; a < this.lines.length; a++) {
+                    drawLine(this.lines[a], modularLineInfo.color, modularLineInfo.colorDark, modularLineInfo.lineWidth);
                 }
             }
 
